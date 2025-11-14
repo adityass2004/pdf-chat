@@ -1,0 +1,17 @@
+# Core dependencies
+numpy
+requests
+
+# PDF processing
+PyPDF2
+PyMuPDF  # fitz module for image extraction
+
+# Image processing
+Pillow  # PIL module
+
+# Machine Learning / Embeddings
+sentence-transformers  # For text embeddings
+faiss-cpu  # or faiss-gpu if you have CUDA
+
+# Note: Make sure Ollama is installed and running separately
+# Install from: https://ollama.ai
