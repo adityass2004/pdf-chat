@@ -405,5 +405,4 @@ For issues and questions:
 
 --- -->
 
-### Creating with using Node.js and Python#   p d f - c h a t  
- 
+### Creating with using Node.js and Python
