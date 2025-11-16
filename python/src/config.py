@@ -10,7 +10,7 @@ TOP_K = 3
 # ========================================
 # TEXT MODEL (for conversations & Q&A)
 # ========================================
-OLLAMA_MODEL = "llama3"
+OLLAMA_MODEL = "llama3.2"
 OLLAMA_URL = "http://localhost:11434/v1/completions"
 
 # ========================================
