@@ -3,566 +3,62 @@ from src.embedder import embed_text, model
 from src.vector_store import create_index, search_index, save_index, load_index
 from src.pdf_extractor import extract_text
 from src.config import CHUNK_SIZE, CHUNK_OVERLAP, TOP_K, OLLAMA_MODEL, OLLAMA_URL
-try:
-    from src.config import VISION_MODEL, VISION_MODEL_FALLBACK, AUTO_FALLBACK
-except ImportError:
-    VISION_MODEL = "llava-phi3"
-    VISION_MODEL_FALLBACK = "moondream"
-    AUTO_FALLBACK = True
-import numpy as np
-import os
+from src.image_handler import ImageHandler
+from src.query_parser import parse_image_query
+from src.model_manager import ModelManager
+from src.utils import setup_logging
 import requests
 import json
+import os
 from PyPDF2 import PdfReader
-import fitz  # PyMuPDF for image extraction
-from PIL import Image
-import io
-import base64
-import re
 
-# Global variables
-CHUNKS = []
-INDEX = None
-PDF_INFO = {}
-PDF_IMAGES = []  # Store extracted images
-CURRENT_VISION_MODEL = None  # Track which vision model is active
+logger = setup_logging()
 
-# -----------------------------
-# Extract images from PDF
-# -----------------------------
-def extract_images_from_pdf(pdf_path, output_dir="data/extracted_images"):
-    """
-    Extract all images from PDF and save them to output directory
-    Returns list of image paths with metadata
-    """
-    os.makedirs(output_dir, exist_ok=True)
-    image_paths = []
-    
-    try:
-        pdf_document = fitz.open(pdf_path)
-        image_count = 0
-        
-        for page_num in range(len(pdf_document)):
-            page = pdf_document[page_num]
-            image_list = page.get_images(full=True)
-            
-            for img_index, img in enumerate(image_list):
-                xref = img[0]
-                base_image = pdf_document.extract_image(xref)
-                image_bytes = base_image["image"]
-                image_ext = base_image["ext"]
-                
-                # Save image
-                image_filename = f"page_{page_num + 1}_img_{img_index + 1}.{image_ext}"
-                image_path = os.path.join(output_dir, image_filename)
-                
-                with open(image_path, "wb") as img_file:
-                    img_file.write(image_bytes)
-                
-                # Get image dimensions
-                try:
-                    with Image.open(image_path) as pil_img:
-                        width, height = pil_img.size
-                except:
-                    width, height = "?", "?"
-                
-                image_paths.append({
-                    "path": image_path,
-                    "page": page_num + 1,
-                    "filename": image_filename,
-                    "format": image_ext,
-                    "width": width,
-                    "height": height,
-                    "index": image_count + 1
-                })
-                image_count += 1
-        
-        pdf_document.close()
-        print(f"✓ Extracted {image_count} images from PDF")
-        return image_paths
-        
-    except Exception as e:
-        print(f"Error extracting images: {e}")
-        return []
+class PDFChat:
+    def __init__(self):
+        self.chunks = []
+        self.index = None
+        self.pdf_info = {}
+        self.image_handler = ImageHandler()
+        self.model_manager = ModelManager()
 
-# -----------------------------
-# Analyze image with Ollama vision model
-# -----------------------------
-def analyze_image_with_ollama(image_path, question=None):
-    """
-    Analyze an image using Ollama's vision model
-    """
-    global CURRENT_VISION_MODEL
-    
-    if question is None:
-        question = "Describe this image in detail. What does it show?"
-    
-    try:
-        # Read and encode image
-        with open(image_path, "rb") as img_file:
-            image_data = base64.b64encode(img_file.read()).decode('utf-8')
-        
-        # Try primary vision model
+    def ollama_query(self, prompt, model_name=OLLAMA_MODEL):
+        """
+        Sends prompt to local Ollama LLaMA3 endpoint via /v1/completions.
+        """
+        headers = {"Content-Type": "application/json"}
+        data = {
+            "model": model_name,
+            "prompt": prompt,
+            "max_tokens": 500,
+            "temperature": 0.7,
+            "top_p": 0.9,
+        }
+
         try:
-            response = requests.post(
-                "http://localhost:11434/api/generate",
-                json={
-                    "model": VISION_MODEL,
-                    "prompt": question,
-                    "images": [image_data],
-                    "stream": False
-                },
-                timeout=60
-            )
-            
+            response = requests.post(OLLAMA_URL, headers=headers, data=json.dumps(data))
             if response.status_code == 200:
-                CURRENT_VISION_MODEL = VISION_MODEL
-                result = response.json()
-                return result.get("response", "No response from vision model")
-            else:
-                raise Exception(f"Vision model returned status {response.status_code}")
-                
-        except Exception as primary_error:
-            # Try fallback model if auto-fallback is enabled
-            if AUTO_FALLBACK:
-                print(f"⚠️ Primary model failed, trying {VISION_MODEL_FALLBACK}...")
-                response = requests.post(
-                    "http://localhost:11434/api/generate",
-                    json={
-                        "model": VISION_MODEL_FALLBACK,
-                        "prompt": question,
-                        "images": [image_data],
-                        "stream": False
-                    },
-                    timeout=60
-                )
-                
-                if response.status_code == 200:
-                    CURRENT_VISION_MODEL = VISION_MODEL_FALLBACK
-                    result = response.json()
-                    return result.get("response", "No response from fallback vision model")
+                res_json = response.json()
+                logger.debug(f"Ollama raw response: {json.dumps(res_json, indent=2)}")
+
+                if "choices" in res_json and len(res_json["choices"]) > 0:
+                    return res_json["choices"][0].get("text", "[No completion returned]")
                 else:
-                    raise Exception(f"Fallback model also failed: {response.status_code}")
+                    return "[No completion returned]"
             else:
-                raise primary_error
-                
-    except requests.exceptions.ConnectionError:
-        return "Cannot connect to Ollama. Make sure 'ollama serve' is running."
-    except Exception as e:
-        return f"Error analyzing image: {str(e)}\nMake sure vision model '{VISION_MODEL}' is installed: ollama pull {VISION_MODEL}"
+                return f"Ollama error {response.status_code}: {response.text}"
 
-# -----------------------------
-# Model management functions
-# -----------------------------
-def list_available_models():
-    """
-    List all available Ollama models
-    """
-    try:
-        response = requests.get("http://localhost:11434/api/tags")
-        if response.status_code == 200:
-            models = response.json().get("models", [])
-            
-            print("\n📦 Available Models:")
-            print("\n🔤 Text Models:")
-            for model in models:
-                name = model.get("name", "")
-                if "llava" not in name.lower() and "moondream" not in name.lower():
-                    size = model.get("size", 0) / (1024**3)  # Convert to GB
-                    print(f"  • {name} ({size:.1f}GB)")
-            
-            print("\n📷 Vision Models:")
-            for model in models:
-                name = model.get("name", "")
-                if "llava" in name.lower() or "moondream" in name.lower():
-                    size = model.get("size", 0) / (1024**3)
-                    print(f"  • {name} ({size:.1f}GB)")
-            
-            return True
-        else:
-            print("Could not fetch models from Ollama")
-            return False
-    except Exception as e:
-        print(f"Error listing models: {e}")
-        return False
+        except requests.exceptions.ConnectionError:
+            return "Cannot connect to Ollama. Make sure 'ollama serve' is running."
 
-
-def show_current_config():
-    """
-    Display current model configuration
-    """
-    print("\n⚙️ Current Configuration:")
-    print(f"  📝 Text Model: {OLLAMA_MODEL}")
-    print(f"  🖼️ Vision Model: {VISION_MODEL}")
-    print(f"  🔄 Fallback Model: {VISION_MODEL_FALLBACK}")
-    print(f"  🤖 Auto-Fallback: {'Enabled' if AUTO_FALLBACK else 'Disabled'}")
-    if CURRENT_VISION_MODEL:
-        print(f"  ✅ Last Used Vision Model: {CURRENT_VISION_MODEL}")
-
-
-def switch_vision_model(model_name):
-    """
-    Switch the active vision model
-    """
-    global VISION_MODEL
-    
-    # Check if model exists
-    try:
-        response = requests.get("http://localhost:11434/api/tags")
-        if response.status_code == 200:
-            models = response.json().get("models", [])
-            model_names = [m.get("name", "") for m in models]
-            
-            # Check if model is available
-            if not any(model_name in name for name in model_names):
-                print(f"❌ Model '{model_name}' not found.")
-                print(f"💡 Download it with: ollama pull {model_name}")
-                return False
-            
-            VISION_MODEL = model_name
-            print(f"✅ Switched to vision model: {model_name}")
-            return True
-        else:
-            print("Could not verify model availability")
-            return False
-    except Exception as e:
-        print(f"Error switching model: {e}")
-        return False
-
-
-# -----------------------------
-# Display image info
-# -----------------------------
-def display_images_info(page_filter=None):
-    """
-    Display information about extracted images
-    """
-    if not PDF_IMAGES:
-        print("\nNo images found in this PDF.")
-        return
-    
-    filtered_images = PDF_IMAGES
-    if page_filter:
-        filtered_images = [img for img in PDF_IMAGES if img['page'] == page_filter]
-        if not filtered_images:
-            print(f"\nNo images found on page {page_filter}.")
-            return
-    
-    print(f"\n📷 Found {len(filtered_images)} image(s):")
-    for img_info in filtered_images:
-        print(f"  {img_info['index']}. {img_info['filename']} - Page {img_info['page']}")
-        print(f"     Format: {img_info['format']} | Size: {img_info['width']}x{img_info['height']}px")
-        print(f"     Path: {img_info['path']}")
-
-
-# -----------------------------
-# Open and optionally analyze image
-# -----------------------------
-def open_image(image_index, analyze=False):
-    """
-    Open image by index and optionally analyze it
-    """
-    if not PDF_IMAGES:
-        print("No images available.")
-        return None
-    
-    if image_index < 1 or image_index > len(PDF_IMAGES):
-        print(f"Invalid image index. Please choose between 1 and {len(PDF_IMAGES)}")
-        return None
-    
-    img_info = PDF_IMAGES[image_index - 1]
-    try:
-        img = Image.open(img_info['path'])
-        img.show()
-        print(f"✓ Opened: {img_info['filename']} (Page {img_info['page']})")
-        
-        if analyze:
-            print("\n🔍 Analyzing image content...")
-            description = analyze_image_with_ollama(img_info['path'])
-            print(f"\n📊 Image Analysis:\n{description}")
-            return description
-        
-        return img_info
-        
-    except Exception as e:
-        print(f"Error opening image: {e}")
-        return None
-
-
-# -----------------------------
-# Get images by page
-# -----------------------------
-def get_images_by_page(page_num):
-    """
-    Get all images from a specific page
-    """
-    return [img for img in PDF_IMAGES if img['page'] == page_num]
-
-
-# -----------------------------
-# Search images by topic
-# -----------------------------
-def search_images_by_topic(topic):
-    """
-    Search for images related to a topic by analyzing their content
-    """
-    if not PDF_IMAGES:
-        return []
-    
-    print(f"\n🔍 Searching for images related to: {topic}")
-    relevant_images = []
-    
-    for img_info in PDF_IMAGES:
-        # Analyze each image with the topic as context
-        question = f"Does this image relate to {topic}? Answer yes or no, then briefly explain why."
-        analysis = analyze_image_with_ollama(img_info['path'], question)
-        
-        # Check if the response indicates relevance
-        if "yes" in analysis.lower()[:50]:  # Check beginning of response
-            relevant_images.append({
-                "info": img_info,
-                "analysis": analysis
-            })
-    
-    return relevant_images
-
-
-# -----------------------------
-# Ollama query
-# -----------------------------
-def ollama_query(prompt, model_name=OLLAMA_MODEL):
-    """
-    Sends prompt to local Ollama LLaMA3 endpoint via /v1/completions
-    """
-    headers = {"Content-Type": "application/json"}
-    data = {
-        "model": model_name,
-        "prompt": prompt,
-        "max_tokens": 300
-    }
-
-    try:
-        response = requests.post(OLLAMA_URL, headers=headers, data=json.dumps(data))
-        if response.status_code == 200:
-            res_json = response.json()
-            print("\n[OLLAMA RAW RESPONSE]:", json.dumps(res_json, indent=2))
-
-            if "choices" in res_json and len(res_json["choices"]) > 0:
-                return res_json["choices"][0].get("text", "[No completion returned]")
-            else:
-                return "[No completion returned]"
-        else:
-            return f"Ollama error {response.status_code}: {response.text}"
-
-    except requests.exceptions.ConnectionError:
-        return "Cannot connect to Ollama. Make sure 'ollama serve' is running."
-
-
-# -----------------------------
-# Build FAISS index
-# -----------------------------
-def build_index(pdf_path):
-    global CHUNKS, INDEX, PDF_INFO, PDF_IMAGES
-
-    # Extract metadata
-    file_stats = os.stat(pdf_path)
-    reader = PdfReader(pdf_path)
-    PDF_INFO = {
-        "file_name": os.path.basename(pdf_path),
-        "page_count": len(reader.pages),
-        "file_size_kb": round(file_stats.st_size / 1024, 2),
-        "format": "PDF Document",
-    }
-
-    # Extract images (always safe)
-    PDF_IMAGES = extract_images_from_pdf(pdf_path)
-
-    # Extract text
-    text = extract_text(pdf_path)
-    if not text or not text.strip():
-        print("⚠️ No text detected in this PDF. Skipping text embedding.")
-        CHUNKS, INDEX = [], None
-        save_index(None)
-        return
-
-    # Continue normally if text exists
-    CHUNKS = chunk_text(text, CHUNK_SIZE, CHUNK_OVERLAP)
-    embeddings = embed_text(CHUNKS)
-    INDEX = create_index(embeddings)
-    save_index(INDEX)
-
-    print(f"✅ Index created with {len(CHUNKS)} chunks for {PDF_INFO['file_name']}.")
-
-
-# -----------------------------
-# Load existing FAISS index
-# -----------------------------
-def load_existing_index():
-    global INDEX
-    INDEX = load_index()
-    if INDEX is None:
-        print("No existing index found. Building new index is required.")
-    else:
-        print("FAISS index loaded successfully.")
-
-
-# -----------------------------
-# Parse natural image queries
-# -----------------------------
-def parse_image_query(query):
-    """
-    Parse natural language image queries
-    Returns: (action, page_num, topic)
-    """
-    query_lower = query.lower()
-    
-    # Extract page number
-    page_match = re.search(r'page\s+(\d+)', query_lower)
-    page_num = int(page_match.group(1)) if page_match else None
-    
-    # Detect action type
-    if any(word in query_lower for word in ["show", "display", "see", "view", "list"]):
-        if page_num:
-            return ("show_page_images", page_num, None)
-        elif any(word in query_lower for word in ["all", "every", "list"]):
-            return ("show_all_images", None, None)
-        else:
-            # Check for topic
-            topic_indicators = ["about", "related to", "of", "with", "regarding"]
-            for indicator in topic_indicators:
-                if indicator in query_lower:
-                    topic = query_lower.split(indicator, 1)[1].strip()
-                    return ("search_topic", None, topic)
-    
-    if any(word in query_lower for word in ["open", "analyze", "describe"]):
-        # Try to find image number
-        num_match = re.search(r'(?:image|img|picture|photo)\s+(\d+)', query_lower)
-        if num_match:
-            img_num = int(num_match.group(1))
-            return ("open_and_analyze", img_num, None)
-        elif page_num:
-            return ("analyze_page", page_num, None)
-    
-    return (None, None, None)
-
-
-# -----------------------------
-# Get Answer
-# -----------------------------
-def get_answer(query):
-    """
-    Mix general AI conversation + PDF-aware context + intelligent image handling
-    """
-    query_lower = query.lower().strip()
-    
-    # Check for image-related queries
-    if any(word in query_lower for word in ["image", "picture", "photo", "diagram", "figure"]):
-        action, page_num, topic = parse_image_query(query)
-        
-        if action == "show_page_images":
-            images = get_images_by_page(page_num)
-            if images:
-                print(f"\n📷 Images on page {page_num}:")
-                for img in images:
-                    print(f"  {img['index']}. {img['filename']} ({img['format']}, {img['width']}x{img['height']}px)")
-                return f"Found {len(images)} image(s) on page {page_num}. Use 'open image <number>' to view or 'analyze image <number>' to get details."
-            else:
-                return f"No images found on page {page_num}."
-        
-        elif action == "show_all_images":
-            display_images_info()
-            return f"Displayed information for {len(PDF_IMAGES)} images."
-        
-        elif action == "search_topic":
-            results = search_images_by_topic(topic)
-            if results:
-                print(f"\n📷 Found {len(results)} relevant image(s):")
-                for i, result in enumerate(results, 1):
-                    img_info = result['info']
-                    print(f"\n{i}. Image {img_info['index']}: {img_info['filename']} (Page {img_info['page']})")
-                    print(f"   Analysis: {result['analysis'][:200]}...")
-                return f"Found {len(results)} images related to '{topic}'."
-            else:
-                return f"No images found related to '{topic}'."
-        
-        elif action == "open_and_analyze":
-            open_image(page_num, analyze=True)
-            return ""
-        
-        elif action == "analyze_page":
-            images = get_images_by_page(page_num)
-            if images:
-                print(f"\n📊 Analyzing {len(images)} image(s) on page {page_num}...")
-                for img in images:
-                    print(f"\n--- Image {img['index']}: {img['filename']} ---")
-                    description = analyze_image_with_ollama(img['path'])
-                    print(description)
-                return ""
-            else:
-                return f"No images found on page {page_num}."
-    
-    # Standard text-based query handling
-    generic_keywords = ["who", "what", "how", "when", "where", "why", "hello", "hi", "good", "hey"]
-    is_generic = any(query_lower.startswith(word) for word in generic_keywords) and len(query_lower.split()) <= 4
-
-    # Build context
-    pdf_meta_context = (
-        f"The current document is '{PDF_INFO.get('file_name', 'Unknown')}', "
-        f"a {PDF_INFO.get('format', 'PDF file')} with {PDF_INFO.get('page_count', '?')} pages, "
-        f"and a file size of about {PDF_INFO.get('file_size_kb', '?')} KB.\n"
-    )
-    
-    if len(PDF_IMAGES) > 0:
-        pdf_meta_context += f"This PDF contains {len(PDF_IMAGES)} images. "
-
-    if is_generic or INDEX is None or not CHUNKS:
-        prompt = f"You are an AI assistant chatting with a user. Be friendly and helpful.\n" \
-                 f"PDF Info: {pdf_meta_context}\nUser: {query}"
-    else:
-        query_embedding = model.encode([query])[0]
-        top_indices = search_index(INDEX, query_embedding, TOP_K)
-        context = "\n".join([CHUNKS[i] for i in top_indices])
-        prompt = (
-            f"You are an AI assistant who has full knowledge about the given PDF document.\n"
-            f"PDF Info: {pdf_meta_context}\n"
-            f"Use this context to answer questions accurately.\n"
-            f"Context: {context}\nUser Question: {query}"
-        )
-
-    return ollama_query(prompt)
-
-
-# -----------------------------
-# CLI Chat
-# -----------------------------
-def start_chat():
-    global CHUNKS, INDEX, PDF_INFO, PDF_IMAGES
-
-    pdf_path = ""
-    while not pdf_path or not os.path.exists(pdf_path):
-        pdf_path = input("Enter path to PDF file: ").strip()
-        if not pdf_path:
-            print("You must enter a PDF path.")
-        elif not os.path.exists(pdf_path):
-            print(f"File not found: {pdf_path}. Please enter a valid path.")
-
-    # Build or load index
-    if not os.path.exists("embeddings/index.faiss"):
-        build_index(pdf_path)
-    else:
-        load_existing_index()
-        text = extract_text(pdf_path)
-
-        if not text or not text.strip():
-            print("⚠️ No text detected. Switching to image-only mode.")
-            CHUNKS, INDEX = [], None
-        else:
-            CHUNKS = chunk_text(text, CHUNK_SIZE, CHUNK_OVERLAP)
-
-        # Gather metadata
+    def build_index(self, pdf_path):
+        """
+        Build FAISS index for the PDF.
+        """
+        # Extract metadata
         file_stats = os.stat(pdf_path)
         reader = PdfReader(pdf_path)
-        PDF_INFO = {
+        self.pdf_info = {
             "file_name": os.path.basename(pdf_path),
             "page_count": len(reader.pages),
             "file_size_kb": round(file_stats.st_size / 1024, 2),
@@ -570,34 +66,253 @@ def start_chat():
         }
 
         # Extract images
-        PDF_IMAGES = extract_images_from_pdf(pdf_path)
+        self.image_handler.extract_images_from_pdf(pdf_path)
 
-    print(f"\n📘 Loaded PDF: {PDF_INFO['file_name']} ({PDF_INFO['page_count']} pages, {PDF_INFO['file_size_kb']} KB)")
-    if PDF_IMAGES:
-        print(f"📷 Found {len(PDF_IMAGES)} images")
-    else:
-        print("❌ No images found in this PDF.")
+        # Extract text
+        text = extract_text(pdf_path)
+        if not text or not text.strip():
+            logger.warning("No text detected in this PDF. Skipping text embedding.")
+            self.chunks, self.index = [], None
+            save_index(None)
+            return
 
-    print("\n" + "=" * 70)
-    print("PDF Chat Ready! You can ask questions naturally:")
-    print("  • 'Show images from page 2'")
-    print("  • 'Analyze image 1'")
-    print("  • 'exit' - Quit")
-    print("=" * 70)
+        # Continue normally if text exists
+        self.chunks = chunk_text(text, CHUNK_SIZE, CHUNK_OVERLAP)
+        embeddings = embed_text(self.chunks)
+        self.index = create_index(embeddings)
+        save_index(self.index)
 
-    while True:
-        query = input("\n💬 Your question: ").strip()
+        logger.info(f"Index created with {len(self.chunks)} chunks for {self.pdf_info['file_name']}.")
 
-        if query.lower() == "exit":
-            break
-        if not query:
-            print("Please type a question or command.")
-            continue
+    def load_existing_index(self):
+        """
+        Load existing FAISS index.
+        """
+        self.index = load_index()
+        if self.index is None:
+            logger.warning("No existing index found. Building new index is required.")
+        else:
+            logger.info("FAISS index loaded successfully.")
 
-        answer = get_answer(query)
-        if answer:
-            print("\n💡 Answer:", answer)
+    def build_enhanced_prompt(self, query, context, pdf_meta_context):
+        """
+        Build an enhanced prompt for better PDF-aware responses.
+        """
+        prompt = f"""You are an intelligent PDF analysis assistant with deep understanding of document content.
+
+DOCUMENT INFORMATION:
+{pdf_meta_context}
+
+YOUR ROLE:
+- Provide accurate, detailed answers based ONLY on the document content provided
+- Use the context below to answer questions precisely
+- If information is not in the context, clearly state "This information is not available in the provided document"
+- Cite specific details from the context when answering
+- Provide clear, well-structured responses
+- If asked about page numbers or specific sections, reference them if available in context
+
+CONTEXT FROM DOCUMENT:
+{context}
+
+IMPORTANT GUIDELINES:
+1. Answer based ONLY on the context provided above
+2. Be specific and reference exact information from the context
+3. If the context doesn't contain enough information, say so clearly
+4. Don't make assumptions beyond what's in the document
+5. Structure your answer clearly with relevant details
+6. If multiple pieces of information are relevant, organize them logically
+
+USER QUESTION: {query}
+
+ANSWER (based on the document context):"""
+        
+        return prompt
+
+    def build_generic_prompt(self, query, pdf_meta_context):
+        """
+        Build a prompt for general conversation or document metadata queries.
+        """
+        prompt = f"""You are a helpful AI assistant for PDF document analysis.
+
+DOCUMENT INFORMATION:
+{pdf_meta_context}
+
+USER QUERY: {query}
+
+INSTRUCTIONS:
+- If asked about the document itself (filename, pages, size), use the document information above
+- For general greetings or conversation, respond naturally and friendly
+- If asked about document content but no specific context is available, inform the user you need more specific questions to search the document
+- Be concise and helpful
+
+YOUR RESPONSE:"""
+        
+        return prompt
+
+    def get_answer(self, query):
+        """
+        Mix general AI conversation + PDF-aware context + intelligent image handling.
+        """
+        query_lower = query.lower().strip()
+        
+        # Check for image-related queries
+        if any(word in query_lower for word in ["image", "picture", "photo", "diagram", "figure"]):
+            action, page_num, topic = parse_image_query(query)
+            
+            if action == "show_page_images":
+                images = self.image_handler.get_images_by_page(page_num)
+                if images:
+                    logger.info(f"Images on page {page_num}:")
+                    for img in images:
+                        logger.info(f"  {img['index']}. {img['filename']} ({img['format']}, {img['width']}x{img['height']}px)")
+                    return f"Found {len(images)} image(s) on page {page_num}. Use 'open image <number>' to view or 'analyze image <number>' to get details."
+                else:
+                    return f"No images found on page {page_num}."
+            
+            elif action == "show_all_images":
+                self.image_handler.display_images_info()
+                return f"Displayed information for {len(self.image_handler.images)} images."
+            
+            elif action == "search_topic":
+                results = self.image_handler.search_images_by_topic(topic)
+                if results:
+                    logger.info(f"Found {len(results)} relevant image(s):")
+                    for i, result in enumerate(results, 1):
+                        img_info = result['info']
+                        logger.info(f"\n{i}. Image {img_info['index']}: {img_info['filename']} (Page {img_info['page']})")
+                        logger.info(f"   Analysis: {result['analysis'][:200]}...")
+                    return f"Found {len(results)} images related to '{topic}'."
+                else:
+                    return f"No images found related to '{topic}'."
+            
+            elif action == "open_and_analyze":
+                self.image_handler.open_image(page_num, analyze=True)
+                return ""
+            
+            elif action == "analyze_page":
+                images = self.image_handler.get_images_by_page(page_num)
+                if images:
+                    logger.info(f"Analyzing {len(images)} image(s) on page {page_num}...")
+                    for img in images:
+                        logger.info(f"\n--- Image {img['index']}: {img['filename']} ---")
+                        description = self.image_handler.analyze_image_with_ollama(img['path'])
+                        logger.info(description)
+                else:
+                    return f"No images found on page {page_num}."
+                return ""
+        
+        # Build PDF metadata context
+        pdf_meta_context = (
+            f"Document Name: '{self.pdf_info.get('file_name', 'Unknown')}'\n"
+            f"Format: {self.pdf_info.get('format', 'PDF file')}\n"
+            f"Total Pages: {self.pdf_info.get('page_count', '?')}\n"
+            f"File Size: {self.pdf_info.get('file_size_kb', '?')} KB\n"
+        )
+        
+        if len(self.image_handler.images) > 0:
+            pdf_meta_context += f"Images in Document: {len(self.image_handler.images)}\n"
+
+        # Check if it's a generic query or document-specific query
+        generic_keywords = ["hello", "hi", "hey", "thanks", "thank you", "goodbye", "bye"]
+        metadata_keywords = ["how many pages", "file size", "document name", "filename", "pdf name"]
+        
+        is_generic = any(query_lower.startswith(word) for word in generic_keywords)
+        is_metadata_query = any(keyword in query_lower for keyword in metadata_keywords)
+
+        # Handle queries based on type
+        if is_generic:
+            # Simple greeting or conversation
+            prompt = self.build_generic_prompt(query, pdf_meta_context)
+            return self.ollama_query(prompt)
+        
+        elif is_metadata_query:
+            # Query about document metadata
+            prompt = self.build_generic_prompt(query, pdf_meta_context)
+            return self.ollama_query(prompt)
+        
+        elif self.index is None or not self.chunks:
+            # No content available
+            return f"This PDF appears to have no text content available for analysis. {pdf_meta_context}\nPlease ask about document metadata or upload a text-based PDF."
+        
+        else:
+            # Content-based query - use RAG
+            query_embedding = model.encode([query])[0]
+            top_indices = search_index(self.index, query_embedding, TOP_K)
+            
+            # Get relevant context chunks
+            context_chunks = [self.chunks[i] for i in top_indices]
+            context = "\n\n".join([f"[Excerpt {i+1}]:\n{chunk}" for i, chunk in enumerate(context_chunks)])
+            
+            # Build enhanced prompt
+            prompt = self.build_enhanced_prompt(query, context, pdf_meta_context)
+            
+            return self.ollama_query(prompt)
+
+    def start_chat(self):
+        """
+        CLI Chat interface.
+        """
+        pdf_path = ""
+        while not pdf_path or not os.path.exists(pdf_path):
+            pdf_path = input("Enter path to PDF file: ").strip()
+            if not pdf_path:
+                logger.warning("You must enter a PDF path.")
+            elif not os.path.exists(pdf_path):
+                logger.error(f"File not found: {pdf_path}. Please enter a valid path.")
+
+        # Build or load index
+        if not os.path.exists("embeddings/index.faiss"):
+            self.build_index(pdf_path)
+        else:
+            self.load_existing_index()
+            text = extract_text(pdf_path)
+
+            if not text or not text.strip():
+                logger.warning("No text detected. Switching to image-only mode.")
+                self.chunks, self.index = [], None
+            else:
+                self.chunks = chunk_text(text, CHUNK_SIZE, CHUNK_OVERLAP)
+
+            # Gather metadata
+            file_stats = os.stat(pdf_path)
+            reader = PdfReader(pdf_path)
+            self.pdf_info = {
+                "file_name": os.path.basename(pdf_path),
+                "page_count": len(reader.pages),
+                "file_size_kb": round(file_stats.st_size / 1024, 2),
+                "format": "PDF Document",
+            }
+
+            # Extract images
+            self.image_handler.extract_images_from_pdf(pdf_path)
+
+        logger.info(f"Loaded PDF: {self.pdf_info['file_name']} ({self.pdf_info['page_count']} pages, {self.pdf_info['file_size_kb']} KB)")
+        if self.image_handler.images:
+            logger.info(f"Found {len(self.image_handler.images)} images")
+        else:
+            logger.info("No images found in this PDF.")
+
+        print("\n" + "=" * 70)
+        print("PDF Chat Ready! You can ask questions naturally:")
+        print("  • 'Show images from page 2'")
+        print("  • 'Analyze image 1'")
+        print("  • 'exit' - Quit")
+        print("=" * 70)
+
+        while True:
+            query = input("\n💬 Your question: ").strip()
+
+            if query.lower() == "exit":
+                break
+            if not query:
+                print("Please type a question or command.")
+                continue
+
+            answer = self.get_answer(query)
+            if answer:
+                print("\n💡 Answer:", answer)
 
 
 if __name__ == "__main__":
-    start_chat()
+    chat = PDFChat()
+    chat.start_chat()
