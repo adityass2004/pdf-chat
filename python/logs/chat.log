@@ -1,0 +1,22 @@
+2025-11-03 18:04:09,319 - WARNING - No existing index found. Building new index is required.
+2025-11-03 18:04:09,361 - WARNING - No text detected. Switching to image-only mode.
+2025-11-03 18:04:09,668 - INFO - Extracted 1 images from PDF
+2025-11-03 18:04:09,669 - INFO - Metadata saved to data/extracted_images/metadata.json
+2025-11-03 18:04:09,670 - INFO - Loaded PDF: image.pdf (1 pages, 121.38 KB)
+2025-11-03 18:04:09,670 - INFO - Found 1 images
+2025-11-04 09:29:24,956 - WARNING - No existing index found. Building new index is required.
+2025-11-04 09:29:25,613 - INFO - Extracted 2 images from PDF
+2025-11-04 09:29:25,614 - INFO - Metadata saved to data/extracted_images/metadata.json
+2025-11-04 09:29:25,614 - INFO - Loaded PDF: resume.pdf (1 pages, 110.33 KB)
+2025-11-04 09:29:25,615 - INFO - Found 2 images
+2025-11-04 09:31:32,740 - INFO - Images on page 1:
+2025-11-04 09:31:32,740 - INFO -   1. page_1_img_1.jpeg (jpeg, 243x243px)
+2025-11-04 09:31:32,741 - INFO -   2. page_1_img_2.png (png, 1166x3px)
+2025-11-04 09:31:45,992 - INFO - Opened: page_1_img_1.jpeg (Page 1)
+2025-11-04 09:31:45,993 - INFO - Analyzing image content...
+2025-11-04 09:32:10,601 - INFO - Image Analysis:
+In the image, a young man is the central figure, standing against a backdrop of trees under a clear blue sky. He is dressed casually in a gray t-shirt that contrasts with his glasses and dark hair. His gaze is directed straight at the camera, lending an air of directness to the image. The trees behind him add a touch of nature to the scene, while his attire suggests a relaxed or informal setting. Despite the presence of other elements in the image, it's clear that he is the main subject here. There are no discernible texts or actions captured in this particular frame. The relative positions of the objects indicate that he is standing closer to the camera than to the trees.
+2025-11-04 09:32:22,336 - INFO - Opened: page_1_img_1.jpeg (Page 1)
+2025-11-04 09:32:22,336 - INFO - Analyzing image content...
+2025-11-04 09:32:35,028 - INFO - Image Analysis:
+In the image, a young man is standing against a blurred backdrop of trees and sky. He is wearing a gray t-shirt and glasses that are framed in gold. The man's gaze is directed straight at the camera, giving him an intense look. His hair is styled into short spikes on top of his head, adding to his youthful appearance. There is no text visible in the image. The focus is primarily on the man and his surroundings are secondary, creating a sense of depth in the image. The trees and sky form a natural background that contrasts with the man's urban attire. His position relative to these elements suggests he might be outdoors during daylight hours.
