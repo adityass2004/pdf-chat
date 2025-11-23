@@ -1,0 +1,7 @@
+pdf_chat_node/output/*
+node_modules/
+.env
+.DS_Store
+__pycache__/
+python/data/extracted_images/
+python/data/
