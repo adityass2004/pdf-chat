@@ -1,370 +1,400 @@
-# 📄 PDF Chat Bot Server
+# 📄 PDF Chat Assistant
 
-A full-stack PDF extraction and chat system built with Node.js and Python. Upload PDFs, extract text and images, and perform intelligent queries on your documents.
+<div align="center">
+
+![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
+![Streamlit](https://img.shields.io/badge/Streamlit-1.28+-red.svg)
+![License](https://img.shields.io/badge/License-MIT-green.svg)
+![Status](https://img.shields.io/badge/Status-Active-success.svg)
+
+**AI-Powered PDF Analysis with RAG, Vision Models & Smart Auto-Formatting**
+
+[Features](#-features) • [Demo](#-demo) • [Installation](#-installation) • [Usage](#-usage) • [Configuration](#-configuration) • [Tech Stack](#-tech-stack)
+
+</div>
+
+---
 
 ## 🌟 Features
 
-- **PDF Upload & Extraction** - Extract text and images from PDF files
-- **Session Management** - Unique session IDs for each uploaded document
-- **Smart Queries** - Multiple query actions for flexible data retrieval
-- **Image Storage** - Organized image extraction per page
-- **Search Functionality** - Search within PDF content
-- **RESTful API** - Clean and documented endpoints
+### 🤖 **Dual AI Models**
+- **Text Analysis**: LLaMA 3.2, Mistral, Phi3, Gemma support
+- **Vision Analysis**: LLaVA-Phi3, Moondream for image understanding
+- **Auto-Fallback**: Automatic model switching for VRAM management
 
-## 🏗️ Project Structure
-Comming soon ..... Stay tuned !!!
-<!-- ```
-D:.
-├── pdf_chat_node/              # Node.js Server
-│   ├── src/
-│   │   ├── extract_pdf_text_and_images.js
-│   │   └── temp_images/
-│   ├── output/
-│   │   └── sessions/           # Session data storage
-│   │       └── [session-id]/
-│   │           ├── data.json   # Extracted metadata
-│   │           └── images/     # Extracted images by page
-│   │               ├── page_1/
-│   │               ├── page_2/
-│   │               └── ...
-│   ├── server.js               # Main server file
-│   ├── package.json
-│   └── .env
-│
-└── python/                     # Python Processing
-    ├── src/
-    │   └── __pycache__/
-    ├── data/
-    │   ├── extracted_images/
-    │   └── logs/
-    ├── embeddings/
-    └── logs/
-``` -->
+### 📊 **Advanced RAG System**
+- FAISS vector database for semantic search
+- Sentence transformers for embeddings
+- Context-aware responses with TOP-K retrieval
+- Chunking with configurable overlap
 
-<!-- ## 🚀 Getting Started
+### 🎨 **Beautiful Interface**
+- Live streaming responses (ChatGPT-style)
+- **Smart Auto-Formatting**: Automatically formats responses as lists or paragraphs based on content
+- Syntax-highlighted code blocks
+- Styled image grids with expandable details
+- Gradient info boxes and professional formatting
+- Dark theme code blocks with proper alignment
+
+### 🖼️ **Image Processing**
+- Automatic image extraction from PDFs
+- Page-wise image indexing
+- Vision AI analysis with LLaVA/Moondream
+- Beautiful grid display with metadata
+
+### ⚡ **Performance**
+- Optimized for RTX 3050 4GB VRAM
+- Efficient memory management
+- Fast vector search with FAISS
+- Model caching and reuse
+
+---
+
+## 📸 Demo
+
+### 💻 Desktop Interface
+
+<div align="center">
+
+![Main Interface](./screenshots/png)
+*Main chat interface with smart-formatted responses and document analysis*
+
+</div>
+
+<div align="center">
+
+![Code and Lists](./screenshots/desktop-features.png)
+*Auto-formatted lists, code blocks, and image grids with beautiful styling*
+
+</div>
+
+### 📱 Mobile Interface
+
+<div align="center">
+<img src="./screenshots/mobile-chat.png" width="300" alt="Mobile Chat View">
+<p><i>Responsive mobile chat interface</i></p>
+</div>
+
+<div align="center">
+<img src="./screenshots/mobile-sidebar.png" width="300" alt="Mobile Sidebar">
+<p><i>Mobile-friendly sidebar with model configuration</i></p>
+</div>
+
+---
+
+## 🚀 Installation
 
 ### Prerequisites
 
-- Node.js (v14 or higher)
-- Python (v3.8 or higher)
-- npm or yarn
+- Python 3.8 or higher
+- [Ollama](https://ollama.ai/) installed and running
+- 4GB+ RAM (8GB recommended)
+- GPU with 4GB+ VRAM (optional but recommended)
 
-### Installation
+### Step 1: Clone Repository
 
-#### 1. Clone the repository
 ```bash
-git clone <your-repo-url>
-cd pdf_chat_node
+git clone https://github.com/adityass2004/pdf-chat-assistant.git
+cd pdf-chat-assistant
 ```
 
-#### 2. Install Node.js dependencies
-```bash
-npm install
-```
+### Step 2: Install Dependencies
 
-Required packages:
-- `express` - Web framework
-- `express-fileupload` - File upload handling
-- `pdf-parse` or similar PDF extraction library
-
-#### 3. Setup Python environment (optional)
 ```bash
-cd ../python
 pip install -r requirements.txt
 ```
 
-#### 4. Start the server
+### Step 3: Download AI Models
+
 ```bash
-cd ../pdf_chat_node
-npm start
+# Download text model
+ollama pull llama3.2
+
+# Download vision model (choose one)
+ollama pull llava-phi3      # Recommended for RTX 3050
+ollama pull moondream       # Lighter alternative
 ```
 
-Server will run on `http://localhost:5000`
+### Step 4: Run Application
 
-## 📡 API Endpoints
-
-### 1️⃣ POST `/extract`
-Upload and extract PDF content
-
-**Request:**
-- Method: `POST`
-- Content-Type: `multipart/form-data`
-- Body: `pdf` (file)
-
-**Response:**
-```json
-{
-  "session_id": "uuid",
-  "name": "document_name",
-  "pages": 9,
-  "images": 15,
-  "texts": 234,
-  "tables": 0,
-  "pages_data": {
-    "page_1": {
-      "texts": ["..."],
-      "images": [...]
-    }
-  },
-  "extracted_at": "2024-01-01T00:00:00.000Z"
-}
+```bash
+python main.py
 ```
 
-**Example:**
-```bash
-curl -X POST http://localhost:5000/extract \
-  -F "pdf=@document.pdf"
+The app will open at `http://localhost:8501`
+
+---
+
+## 📁 Project Structure
+
+```
+pdf-chat-assistant/
+│
+├── main.py                 # Application entry point
+├── requirements.txt        # Python dependencies
+├── README.md              # This file
+│
+├── data/                  # PDF storage
+│   ├── extracted_images/  # Extracted images from PDFs
+│   └── logs/             # Application logs
+│
+├── embeddings/           # FAISS vector indices
+│   └── index.faiss      # Stored embeddings
+│
+├── src/                  # Source code
+│   ├── __init__.py
+│   ├── app.py           # Streamlit interface with smart formatting
+│   ├── chat_copy.py     # Chat logic & prompts
+│   ├── chunker.py       # Text chunking
+│   ├── config.py        # Configuration
+│   ├── embedder.py      # Embedding generation
+│   ├── image_handler.py # Image processing
+│   ├── model_manager.py # Model management
+│   ├── pdf_extractor.py # PDF text extraction
+│   ├── query_parser.py  # Query parsing
+│   ├── utils.py         # Utilities
+│   └── vector_store.py  # FAISS operations
+│
+└── screenshots/          # Demo screenshots
+    ├── desktop-main.png
+    ├── desktop-features.png
+    ├── mobile-chat.png
+    └── mobile-sidebar.png
 ```
 
 ---
 
-### 2️⃣ POST `/query`
-Perform smart queries on extracted data
+## 🎯 Usage
 
-**Actions Available:**
+### Basic Workflow
 
-#### `get_pages` - Get page range
-```json
-{
-  "session_id": "uuid",
-  "action": "get_pages",
-  "from": 1,
-  "to": 5
-}
+1. **Upload PDF**: Click "Choose a PDF file" in the sidebar
+2. **Process**: Click "🚀 Process PDF" to index the document
+3. **Ask Questions**: Type your questions in the chat input
+4. **Get Answers**: Receive AI-powered responses with smart auto-formatting
+
+### Example Queries
+
+#### 📝 Text Questions
+```
+What is the main topic of this document?
+Summarize the key points from page 5
+List all the conclusions mentioned
+Explain the methodology used
+Give me the steps to implement this
 ```
 
-#### `page` - Get single page
-```json
-{
-  "session_id": "uuid",
-  "action": "page",
-  "page": 3
-}
+#### 🖼️ Image Queries
+```
+Show images from page 2
+Show all images
+Analyze image 1
+Find images about diagrams
+What does the image on page 3 show?
 ```
 
-#### `full_text` - Get all text
-```json
-{
-  "session_id": "uuid",
-  "action": "full_text"
-}
+#### 💻 Code Queries
+```
+Show me any code examples in the document
+Explain the algorithm on page 10
+Extract the Python code from this PDF
+List the functions mentioned in this code
 ```
 
-#### `images` - Get all images
-```json
-{
-  "session_id": "uuid",
-  "action": "images"
-}
+### 🎨 Smart Formatting Examples
+
+The assistant automatically formats responses based on content:
+
+**Lists** - Used for:
+- Questions with keywords: "list", "steps", "points", "reasons"
+- Responses containing multiple items
+- Sequential information
+
+**Paragraphs** - Used for:
+- Questions with keywords: "explain", "describe", "summary"
+- Narrative or explanatory content
+- Definitions and concepts
+
+**Mixed Format** - Intelligently combines both when needed
+
+---
+
+## ⚙️ Configuration
+
+### Model Configuration
+
+Edit `src/config.py` to customize:
+
+```python
+# Text Model (for Q&A)
+OLLAMA_MODEL = "llama3.2"
+
+# Vision Model (for images)
+VISION_MODEL = "llava-phi3"
+VISION_MODEL_FALLBACK = "moondream"
+
+# Processing Settings
+CHUNK_SIZE = 500
+CHUNK_OVERLAP = 50
+TOP_K = 3
+
+# Auto-Fallback
+AUTO_FALLBACK = True
 ```
 
-#### `image_text` - Get image descriptions
-```json
-{
-  "session_id": "uuid",
-  "action": "image_text"
-}
-```
+### Available Models
 
-#### `search` - Search in PDF
-```json
-{
-  "session_id": "uuid",
-  "action": "search",
-  "query": "search term"
-}
-```
+#### Text Models
+- `llama3.2` (Default - Best quality)
+- `llama3.1` (Larger context)
+- `mistral` (Fast and efficient)
+- `phi3` (Lightweight)
+- `gemma` (Google's model)
 
-#### `summary` - Get document summary
-```json
-{
-  "session_id": "uuid",
-  "action": "summary"
-}
-```
+#### Vision Models
+| Model | VRAM | Quality | Speed | Best For |
+|-------|------|---------|-------|----------|
+| llava-phi3 | ~2.5GB | High | Fast | RTX 3050 4GB |
+| moondream | ~1.7GB | Good | Very Fast | Low VRAM |
+| llava:7b | ~3.5GB | Very High | Medium | High-end GPUs |
 
-**Example:**
-```bash
-curl -X POST http://localhost:5000/query \
-  -H "Content-Type: application/json" \
-  -d '{
-    "session_id": "your-session-id",
-    "action": "search",
-    "query": "invoice"
-  }'
+---
+
+## 🛠️ Tech Stack
+
+### Core Technologies
+- **[Streamlit](https://streamlit.io/)** - Web interface
+- **[Ollama](https://ollama.ai/)** - Local LLM inference
+- **[LangChain](https://langchain.com/)** - LLM orchestration
+- **[FAISS](https://github.com/facebookresearch/faiss)** - Vector database
+- **[Sentence Transformers](https://www.sbert.net/)** - Text embeddings
+
+### AI Models
+- **LLaMA 3.2** - Text generation
+- **LLaVA-Phi3** - Vision understanding
+- **Moondream** - Lightweight vision model
+
+### Libraries
+```
+streamlit>=1.28.0
+PyPDF2>=3.0.0
+sentence-transformers>=2.2.0
+faiss-cpu>=1.7.4
+Pillow>=10.0.0
+requests>=2.31.0
 ```
 
 ---
 
-### 3️⃣ GET `/session/:sessionId/image/:imageKey`
-Retrieve extracted images
+## 🎨 Features Showcase
 
-**Parameters:**
-- `sessionId` - Session UUID
-- `imageKey` - Format: `{pageNum}_{imageIndex}`
+### 1. Smart Auto-Formatting 🆕
+The assistant intelligently analyzes your question and the response to automatically format the answer:
+- **Lists**: For steps, points, items, reasons, types, methods
+- **Paragraphs**: For explanations, descriptions, summaries, overviews
+- **Mixed**: Seamlessly combines both formats when needed
 
-**Example:**
-```bash
-curl http://localhost:5000/session/uuid/image/1_0 \
-  --output image.png
+### 2. Live Streaming Responses
+Responses appear word-by-word like ChatGPT, creating an engaging user experience.
+
+### 3. Code Syntax Highlighting
+```python
+def process_pdf(file_path):
+    """Extract and analyze PDF content"""
+    text = extract_text(file_path)
+    chunks = chunk_text(text)
+    embeddings = create_embeddings(chunks)
+    return embeddings
 ```
+
+### 4. Beautiful Image Grids
+Images are displayed in 3-column grids with:
+- Styled borders and shadows
+- Page number indicators
+- Expandable metadata (format, dimensions)
+- Responsive layout
+
+### 5. Formatted Text Elements
+- **Headers** with colored underlines
+- *Blockquotes* with gradient backgrounds
+- Lists with proper spacing and numbering
+- Tables with hover effects
+- Info boxes with gradients
 
 ---
 
-### 4️⃣ DELETE `/session/:sessionId`
-Delete session and all associated files
+## 🔧 Troubleshooting
 
-**Example:**
+### Ollama Connection Error
 ```bash
-curl -X DELETE http://localhost:5000/session/your-session-id
+# Make sure Ollama is running
+ollama serve
+
+# Verify models are downloaded
+ollama list
 ```
 
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Session deleted successfully",
-  "session_id": "uuid"
-}
-```
+### VRAM Out of Memory
+1. Enable **Auto-Fallback** in the sidebar
+2. Switch to a lighter model (moondream)
+3. Close other GPU applications
+4. Reduce `max_tokens` in `config.py`
 
-## 🔧 Configuration
+### PDF Processing Fails
+- Ensure PDF has extractable text (not scanned images)
+- Check file size (< 50MB recommended)
+- Verify PDF is not password-protected
 
-### Environment Variables
+### Slow Response Times
+- Use a smaller model (phi3, mistral)
+- Reduce `CHUNK_SIZE` in config
+- Lower `TOP_K` for faster retrieval
 
-Create a `.env` file:
-```env
-PORT=5000
-OUTPUT_DIR=./output/sessions
-MAX_FILE_SIZE=50mb
-```
+---
 
-## 📝 Usage Example
+## 📊 Performance Benchmarks
 
-### Complete Workflow
-```javascript
-// 1. Upload PDF
-const formData = new FormData();
-formData.append('pdf', pdfFile);
+### Processing Times (RTX 3050 4GB)
 
-const extractResponse = await fetch('http://localhost:5000/extract', {
-  method: 'POST',
-  body: formData
-});
+| Task | Time | Model |
+|------|------|-------|
+| PDF Indexing (10 pages) | ~5s | - |
+| Text Query | ~2-3s | llama3.2 |
+| Image Analysis | ~3-4s | llava-phi3 |
+| Image Extraction | ~1s | - |
+| Smart Formatting | <0.1s | - |
 
-const { session_id } = await extractResponse.json();
+### Resource Usage
 
-// 2. Search content
-const searchResponse = await fetch('http://localhost:5000/query', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    session_id,
-    action: 'search',
-    query: 'invoice'
-  })
-});
+| Component | RAM | VRAM |
+|-----------|-----|------|
+| Base App | ~500MB | - |
+| Text Model (llama3.2) | ~2GB | ~2GB |
+| Vision Model (llava-phi3) | ~1GB | ~2.5GB |
+| **Total** | **~3.5GB** | **~4.5GB** |
 
-const searchResults = await searchResponse.json();
+---
 
-// 3. Get full text
-const textResponse = await fetch('http://localhost:5000/query', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    session_id,
-    action: 'full_text'
-  })
-});
+## 🆕 Latest Updates
 
-const { text } = await textResponse.json();
+### Version 2.0 - Smart Formatting Release
+- ✨ **Smart Auto-Formatting**: Automatic list/paragraph detection
+- 🎯 **Context-Aware**: Analyzes questions for optimal formatting
+- 📊 **Enhanced Lists**: Bold numbered points with proper indentation
+- 📝 **Better Paragraphs**: Clean flowing text with headers
+- 🔄 **Mixed Content**: Seamlessly combines lists and paragraphs
 
-// 4. Cleanup
-await fetch(`http://localhost:5000/session/${session_id}`, {
-  method: 'DELETE'
-});
-``` 
-## 🐍 Python Integration (Coming Soon)
+### Version 1.0 - Initial Release
+- 🤖 Dual AI model support
+- 📊 RAG with FAISS
+- 🖼️ Image extraction and analysis
+- 🎨 Beautiful Streamlit interface
 
-The Python module will handle:
-- Advanced text processing
-- Embeddings generation
-- AI-powered chat functionality
-- Vector database integration
-
-## 🛠️ Development
-
-### Running in Development Mode
-```bash
-npm run dev
-```
-
-### Testing
-```bash
-npm test
-```
-
-## 📊 Response Examples
-
-### Extraction Response
-```json
-{
-  "session_id": "2875d3ed-b3ed-4c43-be8b-a2289df01689",
-  "name": "sample_document",
-  "pages": 9,
-  "images": 15,
-  "texts": 234,
-  "tables": 0,
-  "pages_data": {
-    "page_1": {
-      "texts": [
-        "Introduction to PDF Processing",
-        "This document covers..."
-      ],
-      "images": [
-        {
-          "filename": "image_0.png",
-          "url": "/session/2875d3ed.../image/1_0",
-          "description": "Diagram showing workflow"
-        }
-      ]
-    }
-  },
-  "extracted_at": "2024-12-03T10:30:00.000Z"
-}
-```
-
-### Search Response
-```json
-{
-  "session_id": "2875d3ed-b3ed-4c43-be8b-a2289df01689",
-  "action": "search",
-  "query": "invoice",
-  "total_results": 3,
-  "results": [
-    {
-      "page": 2,
-      "text_index": 5,
-      "text": "Invoice #12345 dated March 15, 2024"
-    },
-    {
-      "page": 4,
-      "text_index": 12,
-      "text": "Total invoice amount: $1,250.00"
-    }
-  ]
-}
-``` -->
-<!-- 
-## 🔒 Security Considerations
-
-- File upload size limits enforced
-- Only PDF files accepted
-- Session-based isolation
-- Automatic cleanup capabilities
-- Input validation on all endpoints
+---
 
 ## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
@@ -372,37 +402,60 @@ npm test
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## 📄 License
+### Ideas for Contribution
+- [ ] Add support for more file formats (DOCX, TXT)
+- [ ] Implement conversation history export
+- [ ] Add multi-language support
+- [ ] Create Docker container
+- [ ] Add API endpoint
+- [ ] Implement OCR for scanned PDFs
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+---
 
-## 👥 Authors
+## 📝 License
 
-- Your Name - Initial work
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
 
 ## 🙏 Acknowledgments
 
-- Express.js community
-- PDF parsing libraries
-- Contributors and testers
+- [Ollama](https://ollama.ai/) for local LLM inference
+- [Meta AI](https://ai.meta.com/) for LLaMA models
+- [Streamlit](https://streamlit.io/) for the amazing framework
+- [FAISS](https://github.com/facebookresearch/faiss) for efficient vector search
+- [Sentence Transformers](https://www.sbert.net/) for embeddings
 
-## 📞 Support
+---
 
-For issues and questions:
-- Open an issue on GitHub
-- Email: support@example.com
-- Documentation: [Link to docs]
+## 📧 Contact
 
-## 🗺️ Roadmap
+**Aditya Sagar Sharma** - [@adityass2004](https://github.com/adityass2004)
 
-- [ ] Add table extraction
-- [ ] Implement vector embeddings
-- [ ] Add chat functionality
-- [ ] Support for multiple file formats
-- [ ] Real-time collaboration
-- [ ] Advanced search with AI
-- [ ] Export functionality
+Project Link: [https://github.com/adityass2004/pdf-chat-assistant](https://github.com/adityass2004/pdf-chat-assistant)
 
---- -->
+---
 
-### Creating with using Node.js and Python
+## 🌟 Features Roadmap
+
+- [x] Smart auto-formatting
+- [x] Live streaming responses
+- [x] Image extraction and analysis
+- [x] Multiple AI models
+- [ ] Multi-document chat
+- [ ] Conversation export
+- [ ] OCR support
+- [ ] API endpoints
+- [ ] Docker deployment
+
+---
+
+<div align="center">
+
+### ⭐ Star this repo if you find it helpful!
+
+Made with ❤️ by [Aditya Sagar Sharma](https://github.com/adityass2004)
+
+**[⬆ Back to Top](#-pdf-chat-assistant)**
+
+</div>
