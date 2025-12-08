@@ -56,31 +56,33 @@
 
 <div align="center">
 
-![Main Interface](./screenshots/png)
+![Main Interface](https://github.com/adityass2004/pdf-chat/blob/main/Screenshorts/screenshort_1_pc.png?raw=true)
 *Main chat interface with smart-formatted responses and document analysis*
 
-</div>
-
-<div align="center">
-
-![Code and Lists](./screenshots/desktop-features.png)
-*Auto-formatted lists, code blocks, and image grids with beautiful styling*
-
-</div>
 
 ### 📱 Mobile Interface
+---
 
 <div align="center">
-<img src="./screenshots/mobile-chat.png" width="300" alt="Mobile Chat View">
-<p><i>Responsive mobile chat interface</i></p>
-</div>
 
-<div align="center">
-<img src="./screenshots/mobile-sidebar.png" width="300" alt="Mobile Sidebar">
-<p><i>Mobile-friendly sidebar with model configuration</i></p>
+<table>
+<tr>
+<td align="center">
+<img src="https://github.com/adityass2004/pdf-chat/blob/main/Screenshorts/screenshort_1_ph.png?raw=true" width="200" alt="Mobile Chat View"><br>
+<i>Responsive mobile chat interface</i>
+</td>
+
+<td align="center">
+<img src="https://github.com/adityass2004/pdf-chat/blob/main/Screenshorts/screenshort_2_ph.png?raw=true" width="200" alt="Mobile Sidebar"><br>
+<i>Mobile-friendly sidebar with model configuration</i>
+</td>
+</tr>
+</table>
+
 </div>
 
 ---
+
 
 ## 🚀 Installation
 
