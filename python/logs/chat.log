@@ -20,3 +20,67 @@ In the image, a young man is the central figure, standing against a backdrop of 
 2025-11-04 09:32:22,336 - INFO - Analyzing image content...
 2025-11-04 09:32:35,028 - INFO - Image Analysis:
 In the image, a young man is standing against a blurred backdrop of trees and sky. He is wearing a gray t-shirt and glasses that are framed in gold. The man's gaze is directed straight at the camera, giving him an intense look. His hair is styled into short spikes on top of his head, adding to his youthful appearance. There is no text visible in the image. The focus is primarily on the man and his surroundings are secondary, creating a sense of depth in the image. The trees and sky form a natural background that contrasts with the man's urban attire. His position relative to these elements suggests he might be outdoors during daylight hours.
+2025-12-04 18:06:08,802 - ERROR - File not found: datasample.pdf. Please enter a valid path.
+2025-12-04 18:06:14,791 - WARNING - No existing index found. Building new index is required.
+2025-12-04 18:06:15,945 - INFO - Extracted 5 images from PDF
+2025-12-04 18:06:15,947 - INFO - Metadata saved to data/extracted_images/metadata.json
+2025-12-04 18:06:15,947 - INFO - Loaded PDF: sample.pdf (14 pages, 1180.32 KB)
+2025-12-04 18:06:15,947 - INFO - Found 5 images
+2025-12-04 18:10:57,150 - INFO - Extracted 5 images from PDF
+2025-12-04 18:10:57,152 - INFO - Metadata saved to data/extracted_images/metadata.json
+2025-12-04 18:10:57,873 - INFO - Index created with 2 chunks for sample.pdf.
+2025-12-04 18:10:57,873 - INFO - Loaded PDF: sample.pdf (14 pages, 1180.32 KB)
+2025-12-04 18:10:57,874 - INFO - Found 5 images
+2025-12-08 12:04:50,670 - INFO - Extracted 2 images from PDF
+2025-12-08 12:04:50,672 - INFO - Metadata saved to data/extracted_images/metadata.json
+2025-12-08 12:04:51,566 - INFO - Index created with 1 chunks for Aditya_Sagar_Sharma_Resume_Dec.pdf.
+2025-12-08 12:07:03,259 - INFO - Use pytorch device_name: cpu
+2025-12-08 12:07:03,259 - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2025-12-08 12:07:20,749 - INFO - Extracted 2 images from PDF
+2025-12-08 12:07:20,750 - INFO - Metadata saved to data/extracted_images/metadata.json
+2025-12-08 12:07:21,112 - INFO - Index created with 1 chunks for Aditya_Sagar_Sharma_Resume_Dec.pdf.
+2025-12-08 12:12:55,028 - INFO - Use pytorch device_name: cpu
+2025-12-08 12:12:55,028 - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2025-12-08 12:15:15,649 - INFO - Use pytorch device_name: cpu
+2025-12-08 12:15:15,650 - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2025-12-08 12:16:39,188 - INFO - Extracted 1 images from PDF
+2025-12-08 12:16:39,189 - INFO - Metadata saved to data/extracted_images/metadata.json
+2025-12-08 12:16:39,447 - INFO - Index created with 1 chunks for RA2311003010907_day-4.pdf.
+2025-12-08 12:21:32,093 - INFO - Use pytorch device_name: cpu
+2025-12-08 12:21:32,093 - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2025-12-08 12:21:55,857 - INFO - Extracted 3 images from PDF
+2025-12-08 12:21:55,858 - INFO - Metadata saved to data/extracted_images/metadata.json
+2025-12-08 12:21:56,078 - INFO - Index created with 1 chunks for RA2311003010907_day-3.pdf.
+2025-12-08 12:26:10,002 - INFO - Use pytorch device_name: cpu
+2025-12-08 12:26:10,002 - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2025-12-08 12:27:04,888 - INFO - Extracted 3 images from PDF
+2025-12-08 12:27:04,889 - INFO - Metadata saved to data/extracted_images/metadata.json
+2025-12-08 12:27:05,170 - INFO - Index created with 1 chunks for RA2311003010875_day-3.pdf.
+2025-12-08 12:31:55,181 - INFO - Use pytorch device_name: cpu
+2025-12-08 12:31:55,181 - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2025-12-08 12:32:19,892 - INFO - Extracted 2 images from PDF
+2025-12-08 12:32:19,893 - INFO - Metadata saved to data/extracted_images/metadata.json
+2025-12-08 12:32:20,500 - INFO - Index created with 3 chunks for SkillTrade Project Outline.pdf.
+2025-12-08 12:35:31,209 - INFO - Extracted 2 images from PDF
+2025-12-08 12:35:31,210 - INFO - Metadata saved to data/extracted_images/metadata.json
+2025-12-08 12:35:31,673 - INFO - Index created with 3 chunks for SkillTrade Project Outline.pdf.
+2025-12-08 12:35:49,511 - INFO - Extracted 3 images from PDF
+2025-12-08 12:35:49,513 - INFO - Metadata saved to data/extracted_images/metadata.json
+2025-12-08 12:35:49,764 - INFO - Index created with 1 chunks for RA2311003010875_day-3.pdf.
+2025-12-08 12:40:28,368 - INFO - Extracted 2 images from PDF
+2025-12-08 12:40:28,369 - INFO - Metadata saved to data/extracted_images/metadata.json
+2025-12-08 12:40:28,751 - INFO - Index created with 1 chunks for Aditya_Sagar_Sharma_Resume_Dec.pdf.
+2025-12-08 12:43:15,740 - INFO - Extracted 5 images from PDF
+2025-12-08 12:43:15,741 - INFO - Metadata saved to data/extracted_images/metadata.json
+2025-12-08 12:43:15,904 - INFO - Index created with 1 chunks for assignment3(INDIAN ART FORM).pdf.
+2025-12-08 12:46:35,069 - INFO - Extracted 15 images from PDF
+2025-12-08 12:46:35,071 - INFO - Metadata saved to data/extracted_images/metadata.json
+2025-12-08 12:46:36,395 - INFO - Index created with 11 chunks for base research paper.pdf.
+2025-12-08 13:02:47,784 - INFO - Use pytorch device_name: cpu
+2025-12-08 13:02:47,784 - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2025-12-08 13:03:20,096 - INFO - Extracted 15 images from PDF
+2025-12-08 13:03:20,098 - INFO - Metadata saved to data/extracted_images/metadata.json
+2025-12-08 13:03:21,264 - INFO - Index created with 11 chunks for base research paper.pdf.
+2025-12-08 13:10:52,895 - INFO - Extracted 15 images from PDF
+2025-12-08 13:10:52,897 - INFO - Metadata saved to data/extracted_images/metadata.json
+2025-12-08 13:10:54,010 - INFO - Index created with 11 chunks for base research paper.pdf.
